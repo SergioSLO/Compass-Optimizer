@@ -137,7 +137,7 @@ void run_query_plan(const std::unordered_map<std::string, Table> &tables,
 
     std::cout << "================= COMPASS-lite Query Plan =================\n";
     std::cout << "Query: JOIN " << q.leftTable << " (" << q.leftKey << ")"
-              << "  ⨝  " << q.rightTable << " (" << q.rightKey << ")\n\n";
+              << "  with  " << q.rightTable << " (" << q.rightKey << ")\n\n";
 
     std::cout << "Tables loaded:\n";
     std::cout << "  " << left.name  << " : " << left.data.size()  << " rows\n";
