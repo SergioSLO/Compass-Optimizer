@@ -8,6 +8,10 @@ struct Predicate {
     std::string table;
     std::string column;
     std::string value;
+<<<<<<< Updated upstream
+=======
+    std::string op;
+>>>>>>> Stashed changes
 };
 
 struct JoinCondition {
@@ -31,4 +35,8 @@ struct JoinQuery {
     std::vector<Predicate> predicates;
 };
 
+<<<<<<< Updated upstream
 JoinQuery parse_sql_file(const std::string &path);
+=======
+JoinQuery parse_sql_file(const std::string &path);
+>>>>>>> Stashed changes

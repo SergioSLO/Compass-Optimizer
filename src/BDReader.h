@@ -19,4 +19,8 @@ struct Table {
 };
 
 // Carga CSV y devuelve Table (implementado en BDReader.cpp)
+<<<<<<< Updated upstream
 Table load_csv(const std::string &path);
+=======
+Table load_csv(const std::string &path);
+>>>>>>> Stashed changes
