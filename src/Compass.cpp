@@ -53,3 +53,32 @@ double estimate_join_cardinality(const CMSketch &A, const CMSketch &B) {
     }
     return total / static_cast<double>(d);
 }
+
+double estimate_join_cardinality_multi(const std::vector<CMSketch> &sketches) {
+    if (sketches.empty()) return 0.0;
+    int d = sketches[0].depth;
+    int w = sketches[0].width;
+    // consistency check
+    for (const auto &s : sketches) {
+        if (s.depth != d || s.width != w) {
+            throw std::runtime_error("Sketches con dimensiones distintas (multi)");
+        }
+    }
+
+    long double total = 0.0L;
+    for (int i = 0; i < d; ++i) {
+        long double Ji = 0.0L;
+        for (int b = 0; b < w; ++b) {
+            // product of counts across all sketches in this bucket
+            long double prod = 1.0L;
+            for (const auto &s : sketches) {
+                prod *= static_cast<long double>(s.counts[i][b]);
+                if (prod == 0.0L) break; // short-circuit
+            }
+            Ji += prod;
+        }
+        total += Ji;
+    }
+
+    return static_cast<double>(total / static_cast<long double>(d));
+}

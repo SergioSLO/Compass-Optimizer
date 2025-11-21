@@ -1,3 +1,4 @@
+// SQLParser.cpp
 #include "SQLParser.h"
 
 #include <fstream>
@@ -69,41 +70,60 @@ JoinQuery parse_sql_file(const std::string &path) {
         sql.pop_back();
     }
 
+    // Make an uppercase copy for token positions
     std::string upper = to_upper_copy(sql);
 
-    size_t pos_from  = upper.find(" FROM ");
-    size_t pos_join  = upper.find(" JOIN ",  pos_from == std::string::npos ? 0 : pos_from);
-    size_t pos_on    = upper.find(" ON ",    pos_join == std::string::npos ? 0 : pos_join);
-    size_t pos_where = upper.find(" WHERE ", pos_on   == std::string::npos ? 0 : pos_on);
-
-    if (pos_from == std::string::npos || pos_join == std::string::npos || pos_on == std::string::npos) {
-        throw std::runtime_error("SQL no soportado: se requiere SELECT * FROM A JOIN B ON ...");
+    // Find FROM pos
+    size_t pos_from = upper.find(" FROM ");
+    if (pos_from == std::string::npos) {
+        throw std::runtime_error("SQL no soportado: falta FROM");
     }
 
     JoinQuery q;
 
-    // Tabla izquierda
+    // Extract left (FROM) table (allow optional alias, take first token)
     {
-        size_t start = pos_from + 6; // len(" FROM ")
-        size_t end   = pos_join;
+        size_t start = pos_from + 6; // after " FROM "
+        // find next " JOIN " or " WHERE " or end
+        size_t next_join = upper.find(" JOIN ", start);
+        size_t next_where = upper.find(" WHERE ", start);
+        size_t end = std::min(next_join == std::string::npos ? upper.size() : next_join,
+                              next_where == std::string::npos ? upper.size() : next_where);
         std::string t = trim(sql.substr(start, end - start));
         q.leftTable = trim(split(t, ' ')[0]);
+        q.tables.push_back(q.leftTable);
     }
 
-    // Tabla derecha
-    {
-        size_t start = pos_join + 6; // len(" JOIN ")
-        size_t end   = pos_on;
-        std::string t = trim(sql.substr(start, end - start));
-        q.rightTable = trim(split(t, ' ')[0]);
-    }
+    // Now iterate over JOIN ... ON ... blocks
+    size_t scan_pos = pos_from;
+    while (true) {
+        size_t pos_join = upper.find(" JOIN ", scan_pos == std::string::npos ? 0 : scan_pos);
+        if (pos_join == std::string::npos) break;
 
-    // ON
-    {
-        size_t start = pos_on + 4; // len(" ON ")
-        size_t end   = (pos_where == std::string::npos) ? sql.size() : pos_where;
-        std::string on_clause = trim(sql.substr(start, end - start));
+        // find ON after this JOIN
+        size_t pos_on = upper.find(" ON ", pos_join);
+        if (pos_on == std::string::npos) {
+            throw std::runtime_error("JOIN sin ON");
+        }
 
+        // find end of this JOIN clause: next " JOIN " or " WHERE " or end
+        size_t next_join = upper.find(" JOIN ", pos_on);
+        size_t next_where = upper.find(" WHERE ", pos_on);
+        size_t end_clause = std::min(next_join == std::string::npos ? upper.size() : next_join,
+                                     next_where == std::string::npos ? upper.size() : next_where);
+
+        // Table name between "JOIN" and "ON"
+        {
+            size_t start_table = pos_join + 6; // after " JOIN "
+            size_t end_table = pos_on;
+            std::string t = trim(sql.substr(start_table, end_table - start_table));
+            std::string tblname = trim(split(t, ' ')[0]);
+            q.tables.push_back(tblname);
+        }
+
+        // ON clause between pos_on+4 and end_clause
+        std::string on_clause = trim(sql.substr(pos_on + 4, end_clause - (pos_on + 4)));
+        // Only support a single equality in ON (A.col = B.col)
         size_t eqpos = on_clause.find('=');
         if (eqpos == std::string::npos) {
             throw std::runtime_error("ON clause sin '='");
@@ -114,30 +134,49 @@ JoinQuery parse_sql_file(const std::string &path) {
         auto [lt, lk] = parse_qualified(left_expr);
         auto [rt, rk] = parse_qualified(right_expr);
 
-        if (lt.empty()) lt = q.leftTable;
-        if (rt.empty()) rt = q.rightTable;
+        // If table qualifiers missing, assume left is previously mentioned table and right is newly joined table.
+        // But prefer explicit qualifiers if present.
+        if (lt.empty()) {
+            // conservative: try to use the last table before this JOIN (the one just before current JOIN)
+            // That table is q.tables[q.tables.size() - 2] because we already pushed this JOIN's right table above.
+            if (q.tables.size() >= 2) lt = q.tables[q.tables.size() - 2];
+        }
+        if (rt.empty()) {
+            // assume the right table we just pushed
+            rt = q.tables.back();
+        }
 
-        q.leftKey  = lk;
-        q.rightKey = rk;
+        JoinCondition jc;
+        jc.leftTable  = lt;
+        jc.leftKey    = lk;
+        jc.rightTable = rt;
+        jc.rightKey   = rk;
+        q.joins.push_back(jc);
+
+        scan_pos = end_clause;
     }
 
-    // WHERE (opcional)
+    // WHERE clause (optional)
+    size_t pos_where = upper.find(" WHERE ");
     if (pos_where != std::string::npos) {
-        size_t start = pos_where + 7; // len(" WHERE ")
+        size_t start = pos_where + 7; // after " WHERE "
         size_t end   = sql.size();
         std::string where_clause = trim(sql.substr(start, end - start));
 
+        // Split by top-level AND (case-insensitive)
         std::vector<std::string> parts;
         std::string tmp = where_clause;
         size_t pos = 0;
         while (true) {
-            size_t p = to_upper_copy(tmp).find(" AND ", pos);
+            // find " AND " in upper-case copy of the substring
+            std::string tmp_upper = to_upper_copy(tmp.substr(pos));
+            size_t p = tmp_upper.find(" AND ");
             if (p == std::string::npos) {
                 parts.push_back(trim(tmp.substr(pos)));
                 break;
             } else {
-                parts.push_back(trim(tmp.substr(pos, p - pos)));
-                pos = p + 5;
+                parts.push_back(trim(tmp.substr(pos, p)));
+                pos = pos + p + 5;
             }
         }
 
