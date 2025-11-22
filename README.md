@@ -46,6 +46,26 @@ docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
 
+## Comparar con PostgreSQL
+
+1. Construye y levanta el contenedor descrito en `postgres/README.md`:
+
+```bash
+cd postgres
+docker build -t compass-postgres .
+docker run --rm -d -p 5432:5432 -v "$(pwd)/../Data:/data" --name pg compass-postgres
+```
+
+2. Verifica que `psql` pueda conectarse a `postgresql://compass:compass@localhost:5432/compassdb` (y asegúrate de tener Python 3 instalado para correr el script).
+
+3. Usa el script `scripts/compare_plans.py` para ejecutar la misma consulta en COMPASS-lite y en PostgreSQL:
+
+```bash
+python3 scripts/compare_plans.py --data-dir Data query/query_3.sql
+```
+
+El script muestra el costo/cardenalidad estimada de COMPASS-lite y el resultado de `EXPLAIN (ANALYZE, FORMAT JSON)` de PostgreSQL (filas estimadas, filas reales y tiempos). Sirve para comparar los árboles/plans que se presentan en la demo.
+
 ## Datos y consultas
 
 - `Data/` contiene la versión reducida de Sakila/IMDB que usamos para las demostraciones.
