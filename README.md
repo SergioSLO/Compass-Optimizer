@@ -25,11 +25,18 @@ El programa recibe todos los CSV relevantes y, al final, la consulta SQL:
 ./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql
 ```
 
+También puedes indicar un directorio y dejar que el programa cargue automáticamente todos los CSV requeridos por la query:
+
+```bash
+./bin/compass_lite --data-dir Data query/query_2.sql
+```
+
 Parámetros adicionales:
 
 - `--mode=greedy | compass | both` &rarr; selecciona si se imprime el plan left-deep, el DP estilo COMPASS o ambos (por defecto `both`).
 - `--plan-dot=plan.dot` &rarr; exporta el árbol del planner COMPASS a Graphviz.
 - `--plan-png=plan.png` &rarr; genera PNG (requiere haber pasado `--plan-dot`).
+- `--data-dir=Data` &rarr; intenta cargar cada tabla mencionada en el SQL como `<Data>/<tabla>.csv`.
 
 Ejemplo completo con exportación:
 
@@ -46,7 +53,7 @@ El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo par
 ## Datos y consultas
 
 - `Data/` contiene la versión reducida de Sakila/IMDB que usamos para las demostraciones.
-- `query/` incluye varios ejemplos (`query_1.sql`, etc.). Se pueden agregar más; el parser soporta cadenas de `JOIN`, alias sencillos y predicados con `=, !=, <>, <, >, <=, >=` conectados mediante `AND`.
+- `query/` incluye varios ejemplos (`query_1.sql`, `query_2.sql`, ...). Se pueden agregar más; el parser soporta cadenas de `JOIN`, alias sencillos y predicados con `=, !=, <, >, <=, >=` conectados mediante `AND`.
 
 ## Flujo recomendado para la demo
 

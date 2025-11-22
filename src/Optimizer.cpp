@@ -192,55 +192,41 @@ double estimate_component_with_sketches(
     const std::unordered_map<std::string, CMSketch> &cache) {
     if (component_joins.empty()) return 0.0;
 
-    std::unordered_set<std::string> in_component;
+    std::unordered_set<std::string> used_tables;
+    std::unordered_set<std::string> used_keys;
     std::vector<CMSketch> sketches;
-    std::unordered_set<size_t> used;
 
-    for (size_t i = 0; i < component_joins.size(); ++i) {
-        const auto &jc = component_joins[i];
+    for (const auto &jc : component_joins) {
         std::string kl = sk_key(jc.leftTable, jc.leftKey);
+        if (!used_keys.count(kl)) {
+            auto itL = cache.find(kl);
+            if (itL != cache.end()) {
+                sketches.push_back(itL->second);
+                used_keys.insert(kl);
+                used_tables.insert(jc.leftTable);
+            }
+        }
         std::string kr = sk_key(jc.rightTable, jc.rightKey);
-        auto itL = cache.find(kl);
-        auto itR = cache.find(kr);
-        if (itL == cache.end() || itR == cache.end()) continue;
-        sketches.push_back(itL->second);
-        sketches.push_back(itR->second);
-        in_component.insert(jc.leftTable);
-        in_component.insert(jc.rightTable);
-        used.insert(i);
-        break;
+        if (!used_keys.count(kr)) {
+            auto itR = cache.find(kr);
+            if (itR != cache.end()) {
+                sketches.push_back(itR->second);
+                used_keys.insert(kr);
+                used_tables.insert(jc.rightTable);
+            }
+        }
     }
 
     if (sketches.empty()) return 0.0;
 
     double est = estimate_join_cardinality_multi(sketches);
-    bool progress = true;
-    while (progress) {
-        progress = false;
-        for (size_t i = 0; i < component_joins.size(); ++i) {
-            if (used.count(i)) continue;
-            const auto &jc = component_joins[i];
-            bool left_in = in_component.count(jc.leftTable);
-            bool right_in = in_component.count(jc.rightTable);
-            if (left_in && right_in) {
-                used.insert(i);
-                progress = true;
-                continue;
-            }
-            if (left_in ^ right_in) {
-                std::string tbl = left_in ? jc.rightTable : jc.leftTable;
-                std::string col = left_in ? jc.rightKey : jc.leftKey;
-                std::string key = sk_key(tbl, col);
-                auto it = cache.find(key);
-                if (it == cache.end()) continue;
-                sketches.push_back(it->second);
-                in_component.insert(tbl);
-                used.insert(i);
-                est = estimate_join_cardinality_multi(sketches);
-                progress = true;
-            }
-        }
+
+    if (used_tables.size() < component_tables.size()) {
+        // Falta al menos una tabla (por ejemplo, no había CSV), retornar 0 para que
+        // el caller detecte que la estimación no está completa.
+        return 0.0;
     }
+
     return est;
 }
 
@@ -527,7 +513,6 @@ std::unique_ptr<JoinTreeNode> clone_tree(const JoinTreeNode *node) {
 bool estimate_join_between_masks(
     int leftMask,
     int rightMask,
-    const std::vector<std::string> &names,
     const std::unordered_map<std::string, int> &index_map,
     const std::vector<JoinCondition> &joins,
     const std::unordered_map<std::string, CMSketch> &cache,
@@ -711,7 +696,7 @@ std::unique_ptr<JoinTreeNode> run_query_plan_compass(
                 int right = mask ^ left;
                 if (!dp[left].valid || !dp[right].valid) continue;
                 double join_est = 0.0;
-                if (!estimate_join_between_masks(left, right, component, index_map,
+                if (!estimate_join_between_masks(left, right, index_map,
                                                  comp_joins, ctx.sketchCache, join_est)) {
                     continue;
                 }

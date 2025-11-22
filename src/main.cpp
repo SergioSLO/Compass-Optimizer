@@ -1,6 +1,7 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -33,6 +34,7 @@ int main(int argc, char **argv) {
         std::string dot_path;
         std::string png_path;
         std::vector<std::string> inputs;
+        std::string data_dir;
 
         for (int i = 1; i < argc; ++i) {
             std::string arg = argv[i];
@@ -42,28 +44,71 @@ int main(int argc, char **argv) {
                 dot_path = arg.substr(11);
             } else if (arg.rfind("--plan-png=", 0) == 0) {
                 png_path = arg.substr(11);
+            } else if (arg.rfind("--data-dir=", 0) == 0) {
+                data_dir = arg.substr(11);
+            } else if (arg == "--data-dir") {
+                if (i + 1 >= argc) {
+                    throw std::runtime_error("--data-dir requiere una ruta");
+                }
+                data_dir = argv[++i];
             } else {
                 inputs.push_back(arg);
             }
         }
 
-        if (inputs.size() < 2) {
+        if (inputs.empty()) {
             std::cerr << "Uso: " << argv[0]
-                      << " [--mode=greedy|compass|both] [--plan-dot=path.dot]"
-                         " [--plan-png=path.png] table1.csv ... query.sql\n";
+                      << " [--mode=greedy|compass|both]"
+                         " [--plan-dot=path.dot] [--plan-png=path.png]"
+                         " [--data-dir=Data] [table1.csv ...] query.sql\n";
             return 1;
         }
 
         std::string sql_path = inputs.back();
         inputs.pop_back();
 
-        std::unordered_map<std::string, Table> tables;
-        for (const auto &csv_path : inputs) {
-            Table t = load_csv(csv_path);
-            tables[t.name] = std::move(t);
+        if (inputs.empty() && data_dir.empty()) {
+            std::cerr << "Debe especificar CSVs manualmente o usar --data-dir para auto-carga.\n";
+            return 1;
         }
 
         JoinQuery q = parse_sql_file(sql_path);
+
+        std::unordered_map<std::string, Table> tables;
+        auto load_table = [&](const std::string &path) {
+            Table t = load_csv(path);
+            tables[t.name] = std::move(t);
+        };
+
+        for (const auto &csv_path : inputs) {
+            load_table(csv_path);
+        }
+
+        if (!data_dir.empty()) {
+            std::string base = data_dir;
+            if (!base.empty() && base.back() != '/' && base.back() != '\\') {
+                base.push_back('/');
+            }
+            for (const auto &tbl : q.tables) {
+                if (tables.count(tbl)) continue;
+                std::string candidate = base + tbl + ".csv";
+                load_table(candidate);
+            }
+        }
+
+        std::vector<std::string> missing;
+        for (const auto &tbl : q.tables) {
+            if (!tables.count(tbl)) missing.push_back(tbl);
+        }
+        if (!missing.empty()) {
+            std::ostringstream oss;
+            oss << "No se pudieron cargar las tablas: ";
+            for (size_t i = 0; i < missing.size(); ++i) {
+                if (i) oss << ", ";
+                oss << missing[i];
+            }
+            throw std::runtime_error(oss.str());
+        }
 
         if (mode == PlannerMode::Greedy || mode == PlannerMode::Both) {
             run_query_plan(tables, q);
