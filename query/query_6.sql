@@ -1,6 +1,4 @@
-SELECT
-    f.title,
-    COUNT(r.rental_id) AS times_rented
+SELECT *
 FROM film AS f
 JOIN inventory AS i
     ON f.film_id = i.film_id
