@@ -30,31 +30,25 @@ docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev `
     bash -lc "make"
 ```
 
-### Windows (CMD clásico)
-
-CMD expone la ruta actual en `%cd%`:
-
-```cmd
-docker build -t compass-lite-dev .
-docker run --rm -it -v "%cd%":/workspace -w /workspace compass-lite-dev ^
-    bash -lc "make"
-```
+> Nota: en PowerShell el caracter de continuación de línea es el **backtick** `` ` `` (no la barra invertida). Si prefieres, puedes escribir el comando en una sola línea sin el caracter de continuación.
 
 El binario resultante queda en `bin/compass_lite` dentro del host. Cuando se vuelva a modificar el código, basta con repetir el segundo comando (no hace falta reconstruir la imagen salvo que se cambie el Dockerfile).
 
 ## Ejecución de pruebas
 
-El programa recibe todos los CSV relevantes y, al final, la consulta SQL:
+El programa se ejecuta dentro del contenedor (de esa forma evitamos problemas como el `stub-ld` de NixOS). Ejemplos:
 
-```bash
-./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql
-```
+| Plataforma | Comando |
+|------------|---------|
+| Linux / macOS | ```bash\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev \\\n  bash -lc \"./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
+| Windows PowerShell | ```powershell\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev `\n  bash -lc \"./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
 
 También puedes indicar un directorio y dejar que el programa cargue automáticamente todos los CSV requeridos por la query:
 
-```bash
-./bin/compass_lite --data-dir Data query/query_2.sql
-```
+| Plataforma | Comando |
+|------------|---------|
+| Linux / macOS | ```bash\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev \\\n  bash -lc \"./bin/compass_lite --data-dir Data query/query_2.sql\"\n``` |
+| Windows PowerShell | ```powershell\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev `\n  bash -lc \"./bin/compass_lite --data-dir Data query/query_2.sql\"\n``` |
 
 Parámetros adicionales:
 
@@ -65,13 +59,10 @@ Parámetros adicionales:
 
 Ejemplo completo con exportación:
 
-```bash
-./bin/compass_lite \
-    --mode=both \
-    --plan-dot=plan.dot \
-    --plan-png=plan.png \
-    Data/actor.csv Data/film_actor.csv query/query_1.sql
-```
+| Plataforma | Comando |
+|------------|---------|
+| Linux / macOS (bash/zsh) | ```bash\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev \\\n  bash -lc \"./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
+| Windows PowerShell | ```powershell\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev `\n  bash -lc \"./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
 
