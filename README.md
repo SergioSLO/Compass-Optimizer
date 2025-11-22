@@ -53,11 +53,9 @@ Parámetros adicionales:
 
 Ejemplo completo con exportación:
 
-| Plataforma | Comando |
-|------------|---------|
-| Plataforma | Comando |
-|------------|---------|
-| Ejemplo | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
+```bash
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"
+```
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
 
