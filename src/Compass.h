@@ -16,3 +16,6 @@ struct CMSketch {
 
 // Estima |A ⋈ B| usando join de sketches bucket-wise
 double estimate_join_cardinality(const CMSketch &A, const CMSketch &B);
+
+// Estimación multi-way combinando todos los sketches
+double estimate_join_cardinality_multi(const std::vector<CMSketch> &sketches);
