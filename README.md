@@ -32,19 +32,17 @@ El binario resultante queda en `bin/compass_lite` dentro del host. Cuando se vue
 
 ## Ejecución de pruebas
 
-El programa se ejecuta dentro del contenedor (de esa forma evitamos problemas como el `stub-ld` de NixOS). Ejemplos:
+El programa se ejecuta dentro del contenedor (de esa forma evitamos problemas como el `stub-ld` de NixOS). Los siguientes comandos funcionan igual en bash/zsh y en PowerShell (ambos exponen la ruta actual como `$PWD`):
 
-| Plataforma | Comando |
-|------------|---------|
-| Linux / macOS | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
-| Windows PowerShell | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
+```bash
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql"
+```
 
 También puedes indicar un directorio y dejar que el programa cargue automáticamente todos los CSV requeridos por la query:
 
-| Plataforma | Comando |
-|------------|---------|
-| Linux / macOS | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"` |
-| Windows PowerShell | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"` |
+```bash
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"
+```
 
 Parámetros adicionales:
 
@@ -57,8 +55,9 @@ Ejemplo completo con exportación:
 
 | Plataforma | Comando |
 |------------|---------|
-| Linux / macOS (bash/zsh) | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
-| Windows PowerShell | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
+| Plataforma | Comando |
+|------------|---------|
+| Ejemplo | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
 
