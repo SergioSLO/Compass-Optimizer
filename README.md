@@ -7,10 +7,7 @@ Implementación autocontenida en C++17 que replica las ideas del paper **COMPASS
 No es necesario instalar toolchains en el host. Desde la carpeta `Compass-Optimizer/`:
 
 ```bash
-# 1) construir la imagen con g++, make y graphviz
 docker build -t compass-lite-dev .
-
-# 2) compilar dentro del contenedor (monta el repo actual)
 docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "make"
 ```
 
