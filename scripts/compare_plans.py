@@ -81,15 +81,15 @@ def run_postgres(args):
         explain_sql,
     ]
     stdout = run_command(cmd)
-    json_line = None
-    for line in stdout.splitlines():
-        line = line.strip()
-        if line.startswith("["):
-            json_line = line
+    json_blob = None
+    for idx, line in enumerate(stdout.splitlines()):
+        stripped = line.lstrip()
+        if stripped.startswith("["):
+            json_blob = "\n".join(stdout.splitlines()[idx:]).strip()
             break
-    if not json_line:
+    if not json_blob:
         raise RuntimeError(f"No se encontró JSON en la salida de psql:\n{stdout}")
-    data = json.loads(json_line)
+    data = json.loads(json_blob)
     plan_root = data[0]["Plan"]
     stats = {
         "plan_rows": plan_root.get("Plan Rows"),
