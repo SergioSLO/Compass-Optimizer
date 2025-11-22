@@ -6,8 +6,6 @@ Implementación autocontenida en C++17 que replica las ideas del paper **COMPASS
 
 No es necesario instalar toolchains en el host. Desde la carpeta `Compass-Optimizer/`:
 
-### Linux / macOS
-
 ```bash
 # 1) construir la imagen con g++, make y graphviz
 docker build -t compass-lite-dev .
@@ -16,17 +14,7 @@ docker build -t compass-lite-dev .
 docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "make"
 ```
 
-### Windows (PowerShell)
-
-PowerShell expone la ruta actual en la variable `$PWD`. Usa comillas dobles para que expanda correctamente:
-
-```powershell
-# 1) Build de la imagen
-docker build -t compass-lite-dev .
-
-# 2) Compilar dentro del contenedor
-docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "make"
-```
+> Nota: PowerShell también expone la ruta actual en `$PWD`, por lo que estos comandos funcionan igual en Linux/macOS y en Windows.
 
 El binario resultante queda en `bin/compass_lite` dentro del host. Cuando se vuelva a modificar el código, basta con repetir el segundo comando (no hace falta reconstruir la imagen salvo que se cambie el Dockerfile).
 
