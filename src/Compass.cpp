@@ -81,8 +81,4 @@ double estimate_join_cardinality_multi(const std::vector<CMSketch> &sketches) {
     }
 
     return static_cast<double>(total / static_cast<long double>(d));
-<<<<<<< Updated upstream
 }
-=======
-}
->>>>>>> Stashed changes

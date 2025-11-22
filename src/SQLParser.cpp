@@ -263,29 +263,6 @@ JoinQuery parse_sql_file(const std::string &path) {
         scan_pos = end_clause;
     }
 
-<<<<<<< Updated upstream
-    // WHERE clause (optional)
-    size_t pos_where = upper.find(" WHERE ");
-    if (pos_where != std::string::npos) {
-        size_t start = pos_where + 7; // after " WHERE "
-        size_t end   = sql.size();
-        std::string where_clause = trim(sql.substr(start, end - start));
-
-        // Split by top-level AND (case-insensitive)
-        std::vector<std::string> parts;
-        std::string tmp = where_clause;
-        size_t pos = 0;
-        while (true) {
-            // find " AND " in upper-case copy of the substring
-            std::string tmp_upper = to_upper_copy(tmp.substr(pos));
-            size_t p = tmp_upper.find(" AND ");
-            if (p == std::string::npos) {
-                parts.push_back(trim(tmp.substr(pos)));
-                break;
-            } else {
-                parts.push_back(trim(tmp.substr(pos, p)));
-                pos = pos + p + 5;
-=======
     // === WHERE === 
     size_t pos_where = upper.find(" WHERE ");
     if (pos_where != std::string::npos) {
@@ -304,7 +281,6 @@ JoinQuery parse_sql_file(const std::string &path) {
             } else {
                 cond = trim(where_block.substr(pos, and_pos - pos));
                 pos  = and_pos + 5;
->>>>>>> Stashed changes
             }
 
             if (cond.empty()) continue;

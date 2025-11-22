@@ -20,8 +20,4 @@ struct CMSketch {
 double estimate_join_cardinality(const CMSketch &A, const CMSketch &B);
 
 // Estimación multi-way generalizada (prod across sketches per bucket)
-<<<<<<< Updated upstream
 double estimate_join_cardinality_multi(const std::vector<CMSketch> &sketches);
-=======
-double estimate_join_cardinality_multi(const std::vector<CMSketch> &sketches);
->>>>>>> Stashed changes
