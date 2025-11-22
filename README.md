@@ -13,8 +13,7 @@ No es necesario instalar toolchains en el host. Desde la carpeta `Compass-Optimi
 docker build -t compass-lite-dev .
 
 # 2) compilar dentro del contenedor (monta el repo actual)
-docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev \
-    bash -lc "make"
+docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "make"
 ```
 
 ### Windows (PowerShell)
@@ -26,11 +25,8 @@ PowerShell expone la ruta actual en la variable `$PWD`. Usa comillas dobles para
 docker build -t compass-lite-dev .
 
 # 2) Compilar dentro del contenedor
-docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev `
-    bash -lc "make"
+docker run --rm -it -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "make"
 ```
-
-> Nota: en PowerShell el caracter de continuación de línea es el **backtick** `` ` `` (no la barra invertida). Si prefieres, puedes escribir el comando en una sola línea sin el caracter de continuación.
 
 El binario resultante queda en `bin/compass_lite` dentro del host. Cuando se vuelva a modificar el código, basta con repetir el segundo comando (no hace falta reconstruir la imagen salvo que se cambie el Dockerfile).
 
@@ -40,15 +36,15 @@ El programa se ejecuta dentro del contenedor (de esa forma evitamos problemas co
 
 | Plataforma | Comando |
 |------------|---------|
-| Linux / macOS | ```bash\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev \\\n  bash -lc \"./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
-| Windows PowerShell | ```powershell\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev `\n  bash -lc \"./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
+| Linux / macOS | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
+| Windows PowerShell | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
 
 También puedes indicar un directorio y dejar que el programa cargue automáticamente todos los CSV requeridos por la query:
 
 | Plataforma | Comando |
 |------------|---------|
-| Linux / macOS | ```bash\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev \\\n  bash -lc \"./bin/compass_lite --data-dir Data query/query_2.sql\"\n``` |
-| Windows PowerShell | ```powershell\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev `\n  bash -lc \"./bin/compass_lite --data-dir Data query/query_2.sql\"\n``` |
+| Linux / macOS | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"` |
+| Windows PowerShell | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"` |
 
 Parámetros adicionales:
 
@@ -61,8 +57,8 @@ Ejemplo completo con exportación:
 
 | Plataforma | Comando |
 |------------|---------|
-| Linux / macOS (bash/zsh) | ```bash\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev \\\n  bash -lc \"./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
-| Windows PowerShell | ```powershell\ndocker run --rm -v \"$PWD\":/workspace -w /workspace compass-lite-dev `\n  bash -lc \"./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql\"\n``` |
+| Linux / macOS (bash/zsh) | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
+| Windows PowerShell | `docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"` |
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
 
