@@ -41,10 +41,10 @@ Parámetros adicionales:
 - `--plan-png=plan.png` &rarr; genera PNG (requiere haber pasado `--plan-dot`).
 - `--data-dir=Data` &rarr; intenta cargar cada tabla mencionada en el SQL como `<Data>/<tabla>.csv`.
 
-Ejemplo completo con exportación (útil para acompañar la demo con `query_3.sql` o `query_4.sql`):
+Ejemplo completo con exportación (útil para acompañar la demo que muestra todos los joins de `query_3.sql`):
 
 ```bash
-docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png --data-dir Data query/query_3.sql"
 ```
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
