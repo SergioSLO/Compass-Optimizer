@@ -14,17 +14,11 @@
 #include <algorithm>
 #include <limits>
 
+
 // -----------------------------------------------------------------------------
 // Helpers básicos: filtrado, sketches, etc.
 // -----------------------------------------------------------------------------
 
-<<<<<<< Updated upstream
-// (keep filter_rows, build_sketch_for_table, execute_hash_join helpers as before)
-// I will reuse them from your previous file; assume they're present here.
-// For completeness, include them (copy-paste from your current file) if not already present.
-
-=======
->>>>>>> Stashed changes
 static std::vector<int> filter_rows(const Table &t,
                                     const std::vector<Predicate> &preds)
 {
@@ -114,6 +108,7 @@ static std::vector<int> filter_rows(const Table &t,
 
     return rows;
 }
+
 
 static CMSketch build_sketch_for_table(const Table &t,
                                        const std::vector<int> &rows,
@@ -227,8 +222,6 @@ static double estimate_component_with_sketches(
         // Sin joins: no tiene mucho sentido (producto de tamaños), pero para no explotar devolvemos 0.
         return 0.0;
     }
-    return freq;
-}
 
     std::unordered_set<std::string> in_set;
     std::vector<CMSketch> current_sketches;
@@ -274,8 +267,6 @@ static double estimate_component_with_sketches(
                 progress = true;
             }
         }
-        cur_freq.swap(new_freq);
-        if (cur_freq.empty()) return 0;
     }
 
     return est;
@@ -864,7 +855,6 @@ void run_query_plan_compass(const std::unordered_map<std::string, Table> &tables
                     best.tree->cost = cost_here;
                     best.tree->left  = clone_tree(L.tree.get());
                     best.tree->right = clone_tree(R.tree.get());
-
                 }
             }
 
