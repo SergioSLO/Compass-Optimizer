@@ -32,6 +32,8 @@ También puedes indicar un directorio y dejar que el programa cargue automática
 docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"
 ```
 
+> Consejo: usa `--data-dir Data` para queries grandes (`query_3.sql`, `query_4.sql`) y evita listar manualmente cada CSV. El programa cargará `Data/<tabla>.csv` según los nombres usados en el SQL.
+
 Parámetros adicionales:
 
 - `--mode=greedy | compass | both` &rarr; selecciona si se imprime el plan left-deep, el DP estilo COMPASS o ambos (por defecto `both`).
