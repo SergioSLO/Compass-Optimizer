@@ -186,6 +186,22 @@ std::vector<JoinCondition> joins_for_tables(const std::vector<JoinCondition> &al
     return res;
 }
 
+double normalize_join_estimate(double left_rows, double right_rows, double est) {
+    if (est > 0.0) return est;
+    double prod = left_rows * right_rows;
+    if (prod <= 0.0) return 1.0;
+    double fallback = std::sqrt(prod);
+    return std::max(1.0, fallback);
+}
+
+double compute_join_cost(double left_rows, double right_rows, double join_rows) {
+    double left = std::max(1.0, left_rows);
+    double right = std::max(1.0, right_rows);
+    double joinv = std::max(1.0, join_rows);
+    const double overhead_factor = 0.5;
+    return joinv + overhead_factor * (left + right);
+}
+
 double estimate_component_with_sketches(
     const std::vector<std::string> &component_tables,
     const std::vector<JoinCondition> &component_joins,
@@ -386,23 +402,29 @@ bool find_join_estimate(const std::string &newTable,
     return true;
 }
 
-double evaluate_left_deep_order(const std::vector<std::string> &order,
-                                const std::vector<JoinCondition> &joins,
-                                const std::unordered_map<std::string, CMSketch> &cache,
-                                std::vector<double> &step_cards) {
-    if (order.size() < 2) return 0.0;
+double evaluate_left_deep_order(
+    const std::vector<std::string> &order,
+    const std::vector<JoinCondition> &joins,
+    const std::unordered_map<std::string, CMSketch> &cache,
+    const std::unordered_map<std::string, std::vector<int>> &rows_per_table,
+    std::vector<double> &step_cards) {
+    if (order.empty()) return 0.0;
     std::unordered_set<std::string> prefix;
     prefix.insert(order[0]);
-    double total = 0.0;
+    double total = rows_per_table.at(order[0]).size();
+    double prefix_rows = total;
     step_cards.clear();
     for (size_t i = 1; i < order.size(); ++i) {
         double est = 0.0;
         if (!find_join_estimate(order[i], prefix, joins, cache, est)) {
             return std::numeric_limits<double>::infinity();
         }
-        prefix.insert(order[i]);
+        double new_rows = rows_per_table.at(order[i]).size();
+        est = normalize_join_estimate(prefix_rows, new_rows, est);
         step_cards.push_back(est);
-        total += est;
+        total += compute_join_cost(prefix_rows, new_rows, est);
+        prefix_rows = est;
+        prefix.insert(order[i]);
     }
     return total;
 }
@@ -428,10 +450,11 @@ std::vector<std::string> greedy_left_deep_order(
     std::unordered_set<std::string> prefix(order.begin(), order.end());
 
     step_cards.clear();
-    total_cost = 0.0;
+    total_cost = rows_per_table.at(order[0]).size();
+    double prefix_rows = total_cost;
 
     while (!remaining.empty()) {
-        double best_est = std::numeric_limits<double>::infinity();
+        double best_cost_delta = std::numeric_limits<double>::infinity();
         size_t best_idx = 0;
         bool found = false;
         for (size_t i = 0; i < remaining.size(); ++i) {
@@ -439,8 +462,11 @@ std::vector<std::string> greedy_left_deep_order(
             if (!find_join_estimate(remaining[i], prefix, joins, cache, est)) {
                 continue;
             }
-            if (est < best_est) {
-                best_est = est;
+            double candidate_rows = rows_per_table.at(remaining[i]).size();
+            est = normalize_join_estimate(prefix_rows, candidate_rows, est);
+            double cand_cost = compute_join_cost(prefix_rows, candidate_rows, est);
+            if (cand_cost < best_cost_delta) {
+                best_cost_delta = cand_cost;
                 best_idx = i;
                 found = true;
             }
@@ -448,11 +474,17 @@ std::vector<std::string> greedy_left_deep_order(
         if (!found) {
             return {};
         }
-        order.push_back(remaining[best_idx]);
+        const std::string chosen = remaining[best_idx];
+        double chosen_rows = rows_per_table.at(chosen).size();
+        double est = 0.0;
+        find_join_estimate(chosen, prefix, joins, cache, est);
+        est = normalize_join_estimate(prefix_rows, chosen_rows, est);
+        order.push_back(chosen);
         prefix.insert(remaining[best_idx]);
         remaining.erase(remaining.begin() + best_idx);
-        step_cards.push_back(best_est);
-        total_cost += best_est;
+        step_cards.push_back(est);
+        total_cost += compute_join_cost(prefix_rows, chosen_rows, est);
+        prefix_rows = est;
     }
     return order;
 }
@@ -471,7 +503,7 @@ std::vector<std::string> best_left_deep_order(
         best_cost = std::numeric_limits<double>::infinity();
         std::vector<double> tmp;
         do {
-            double cost = evaluate_left_deep_order(perm, joins, cache, tmp);
+            double cost = evaluate_left_deep_order(perm, joins, cache, rows_per_table, tmp);
             if (cost < best_cost) {
                 best_cost = cost;
                 best = perm;
@@ -700,13 +732,19 @@ std::unique_ptr<JoinTreeNode> run_query_plan_compass(
                                                  comp_joins, ctx.sketchCache, join_est)) {
                     continue;
                 }
-                double cand_cost = dp[left].cost + dp[right].cost + join_est;
+                double norm_est = normalize_join_estimate(dp[left].est_card,
+                                                          dp[right].est_card,
+                                                          join_est);
+                double join_cost = compute_join_cost(dp[left].est_card,
+                                                     dp[right].est_card,
+                                                     norm_est);
+                double cand_cost = dp[left].cost + dp[right].cost + join_cost;
                 auto subset_tables = subset_to_tables(mask, component);
                 auto subset_joins = joins_for_tables(comp_joins, subset_tables);
                 double subset_est = estimate_component_with_sketches(subset_tables,
                                                                      subset_joins,
                                                                      ctx.sketchCache);
-                if (subset_est == 0.0) subset_est = join_est;
+                if (subset_est == 0.0) subset_est = norm_est;
 
                 if (!best.valid || cand_cost < best.cost) {
                     best.valid = true;

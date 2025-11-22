@@ -38,7 +38,7 @@ El programa se ejecuta dentro del contenedor (de esa forma evitamos problemas co
 docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql"
 ```
 
-También puedes indicar un directorio y dejar que el programa cargue automáticamente todos los CSV requeridos por la query:
+También puedes indicar un directorio y dejar que el programa cargue automáticamente todos los CSV requeridos por la query (ideal para las consultas más grandes `query_3.sql`, `query_4.sql`):
 
 ```bash
 docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"
@@ -51,7 +51,7 @@ Parámetros adicionales:
 - `--plan-png=plan.png` &rarr; genera PNG (requiere haber pasado `--plan-dot`).
 - `--data-dir=Data` &rarr; intenta cargar cada tabla mencionada en el SQL como `<Data>/<tabla>.csv`.
 
-Ejemplo completo con exportación:
+Ejemplo completo con exportación (útil para acompañar la demo con `query_3.sql` o `query_4.sql`):
 
 ```bash
 docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png Data/actor.csv Data/film_actor.csv query/query_1.sql"
@@ -62,7 +62,7 @@ El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo par
 ## Datos y consultas
 
 - `Data/` contiene la versión reducida de Sakila/IMDB que usamos para las demostraciones.
-- `query/` incluye varios ejemplos (`query_1.sql`, `query_2.sql`, ...). Se pueden agregar más; el parser soporta cadenas de `JOIN`, alias sencillos y predicados con `=, !=, <, >, <=, >=` conectados mediante `AND`.
+- `query/` incluye varios ejemplos (`query_1.sql`, `query_2.sql`, `query_3.sql`, `query_4.sql`). Las dos últimas contienen 4–5 joins para probar el planner COMPASS. Se pueden agregar más; el parser soporta cadenas de `JOIN`, alias sencillos y predicados con `=, !=, <, >, <=, >=` conectados mediante `AND`.
 
 ## Flujo recomendado para la demo
 
