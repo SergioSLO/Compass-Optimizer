@@ -41,7 +41,7 @@ Parámetros adicionales:
 Ejemplo completo con exportación (útil para acompañar la demo que muestra todos los joins de `query_3.sql`):
 
 ```bash
-docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=out/query3.dot --plan-png=out/query3.png --data-dir Data query/query_3.sql"
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=outputs/query3.dot --plan-png=outputs/query3.png --data-dir Data query/query_3.sql"
 ```
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
@@ -61,10 +61,12 @@ docker run --rm -d -p 5432:5432 -v "$PWD/../Data:/data" --name pg compass-postgr
 3. Usa el script `scripts/compare_plans.py` desde un contenedor Python (no necesitas tener Python ni psql instalados en el host):
 
 ```bash
-docker run --rm --network=host -e DEBIAN_FRONTEND=noninteractive -v "$PWD":/workspace -w /workspace python:3-slim bash -lc "apt-get update >/dev/null && apt-get install -y -qq postgresql-client graphviz >/dev/null && python scripts/compare_plans.py --data-dir Data --compass-plan-dot=out/query3.dot --compass-plan-png=out/query3.png query/query_3.sql"
+docker run --rm --network=host -e DEBIAN_FRONTEND=noninteractive -v "$PWD":/workspace -w /workspace python:3-slim bash -lc "apt-get update >/dev/null && apt-get install -y -qq postgresql-client graphviz >/dev/null && python scripts/compare_plans.py --data-dir Data --compass-plan-dot=outputs/query3.dot --compass-plan-png=outputs/query3.png query/query_3.sql"
 ```
 
-El script muestra el costo/cardenalidad estimada de COMPASS-lite (solo plan) y el resultado de `EXPLAIN (FORMAT JSON)` de PostgreSQL (nodo raíz, filas/costos estimados). También genera automáticamente `plan.dot`/`plan.png` si proporcionas las rutas. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
+> Nota: crea la carpeta `outputs/` antes de invocar estos comandos si deseas conservar los planes.
+
+El script muestra el costo/cardenalidad estimada y el tiempo de planificación de COMPASS-lite (solo plan) y el resultado de `EXPLAIN (ANALYZE, FORMAT JSON)` de PostgreSQL (nodo raíz, filas/costos estimados, tiempos de planificación/ejecución). También genera automáticamente `outputs/*.dot`/`outputs/*.png` si proporcionas las rutas. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
 
 ## Datos y consultas
 

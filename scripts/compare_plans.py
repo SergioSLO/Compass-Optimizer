@@ -12,6 +12,7 @@ import argparse
 import json
 import re
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -74,15 +75,18 @@ def build_compass_command(args):
 
 def run_compass(args):
     cmd = build_compass_command(args)
+    start = time.perf_counter()
     output = run_command(cmd)
+    elapsed_ms = (time.perf_counter() - start) * 1000.0
     stats = parse_compass_stats(output)
     stats["full_output"] = output
+    stats["plan_time_ms"] = elapsed_ms
     return stats
 
 
 def run_postgres(args):
     sql = load_query(args.query)
-    explain_sql = f"EXPLAIN (FORMAT JSON) {sql};"
+    explain_sql = f"EXPLAIN (ANALYZE, FORMAT JSON) {sql};"
     cmd = [
         "psql",
         args.pg_url,
@@ -93,7 +97,9 @@ def run_postgres(args):
         "-c",
         explain_sql,
     ]
+    start = time.perf_counter()
     stdout = run_command(cmd)
+    elapsed_ms = (time.perf_counter() - start) * 1000.0
     json_blob = None
     for idx, line in enumerate(stdout.splitlines()):
         stripped = line.lstrip()
@@ -109,8 +115,12 @@ def run_postgres(args):
         "plan_width": plan_root.get("Plan Width"),
         "startup_cost": plan_root.get("Startup Cost"),
         "total_cost": plan_root.get("Total Cost"),
+        "actual_rows": plan_root.get("Actual Rows"),
+        "planning_time": data[0].get("Planning Time"),
+        "execution_time": data[0].get("Execution Time"),
         "node_type": plan_root.get("Node Type"),
         "raw": stdout,
+        "elapsed_ms": elapsed_ms,
     }
     return stats
 
@@ -159,17 +169,21 @@ def main():
     print("\n--- Resumen ---")
     print(f"  Costo acumulado estimado : {compass_stats.get('cost')}")
     print(f"  Cardinalidad estimada     : {compass_stats.get('est_total')}")
+    plan_time = compass_stats.get("plan_time_ms")
+    if plan_time is not None:
+        print(f"  Tiempo de planificación   : {plan_time:.2f} ms")
 
-    print("\n== PostgreSQL (EXPLAIN) ==")
+    print("\n== PostgreSQL (EXPLAIN ANALYZE) ==")
     pg_stats = run_postgres(args)
-    print("--- Salida completa ---")
-    print(pg_stats.get("raw", ""))
-    print("\n--- Resumen ---")
-    print(f"  Nodo raíz        : {pg_stats.get('node_type')}")
-    print(f"  Filas estimadas  : {pg_stats.get('plan_rows')}")
-    print(f"  Ancho estimado   : {pg_stats.get('plan_width')}")
-    print(f"  Costo inicial    : {pg_stats.get('startup_cost')}")
-    print(f"  Costo total      : {pg_stats.get('total_cost')}")
+    print("--- Resumen ---")
+    print(f"  Nodo raíz             : {pg_stats.get('node_type')}")
+    print(f"  Filas (est/reales)    : {pg_stats.get('plan_rows')} / {pg_stats.get('actual_rows')}")
+    print(f"  Costos (inicio/total) : {pg_stats.get('startup_cost')} / {pg_stats.get('total_cost')}")
+    print(f"  Tiempo planificación  : {pg_stats.get('planning_time')} ms")
+    print(f"  Tiempo ejecución      : {pg_stats.get('execution_time')} ms")
+    elapsed = pg_stats.get("elapsed_ms")
+    if elapsed is not None:
+        print(f"  Tiempo total comando  : {elapsed:.2f} ms")
 
 
 if __name__ == "__main__":
