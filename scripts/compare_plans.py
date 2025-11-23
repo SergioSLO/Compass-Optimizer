@@ -21,8 +21,11 @@ def run_command(cmd, input_text=None):
         input=input_text,
         text=True,
         capture_output=True,
-        check=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Error al ejecutar {' '.join(cmd)}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+        )
     return result.stdout
 
 
