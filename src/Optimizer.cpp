@@ -620,7 +620,8 @@ QueryContext prepare_context(const std::unordered_map<std::string, Table> &table
 }  // namespace
 
 void run_query_plan(const std::unordered_map<std::string, Table> &tables,
-                    const JoinQuery &q) {
+                    const JoinQuery &q,
+                    bool run_exact_join) {
     QueryContext ctx = prepare_context(tables, q);
 
     std::cout << "================= COMPASS-lite (Left-deep) =================\n";
@@ -660,30 +661,46 @@ void run_query_plan(const std::unordered_map<std::string, Table> &tables,
         if (est_component == 0.0 && !step_cards.empty()) {
             est_component = step_cards.back();
         }
-        auto real = execute_exact_component_join(component, comp_joins,
-                                                 ctx.table_ptrs, ctx.rows_per_table);
+        std::uint64_t real = 0;
+        bool have_real = false;
+        if (run_exact_join) {
+            real = execute_exact_component_join(component, comp_joins,
+                                                ctx.table_ptrs, ctx.rows_per_table);
+            have_real = true;
+        }
 
         print_sequential_plan(order, step_cards, "Orden elegido:");
         std::cout << "  Costo acumulado estimado: " << std::fixed << std::setprecision(2)
                   << cost << "\n";
         std::cout << "  Cardinalidad estimada componente: "
                   << std::fixed << std::setprecision(2) << est_component << "\n";
-        std::cout << "  Cardinalidad real componente: " << real << "\n\n";
+        if (have_real) {
+            std::cout << "  Cardinalidad real componente: " << real << "\n\n";
+        } else {
+            std::cout << "  Cardinalidad real componente: (omitido)\n\n";
+        }
 
         total_estimate *= (est_component > 0.0 ? est_component : 0.0);
-        total_real *= real;
+        if (have_real) {
+            total_real *= real;
+        }
     }
 
     std::cout << "================= Totales (producto componentes) ================\n";
     std::cout << "  Cardinalidad estimada total : "
               << std::fixed << std::setprecision(2) << total_estimate << "\n";
-    std::cout << "  Cardinalidad real total     : " << total_real << "\n";
+    if (run_exact_join) {
+        std::cout << "  Cardinalidad real total     : " << total_real << "\n";
+    } else {
+        std::cout << "  Cardinalidad real total     : (omitido)\n";
+    }
     std::cout << "=================================================================\n\n";
 }
 
 std::unique_ptr<JoinTreeNode> run_query_plan_compass(
     const std::unordered_map<std::string, Table> &tables,
-    const JoinQuery &q) {
+    const JoinQuery &q,
+    bool run_exact_join) {
     QueryContext ctx = prepare_context(tables, q);
 
     std::cout << "================= Planner estilo COMPASS =================\n";
@@ -772,20 +789,31 @@ std::unique_ptr<JoinTreeNode> run_query_plan_compass(
             continue;
         }
 
-        auto real = execute_exact_component_join(component, comp_joins,
+        std::uint64_t real = 0;
+        bool have_real = false;
+        if (run_exact_join) {
+            real = execute_exact_component_join(component, comp_joins,
                                                  ctx.table_ptrs, ctx.rows_per_table);
+            have_real = true;
+        }
         std::cout << "  Mejor costo estimado: " << std::fixed << std::setprecision(2)
                   << dp[full_mask].cost << "\n";
         std::cout << "  Cardinalidad estimada: "
                   << std::fixed << std::setprecision(2) << dp[full_mask].est_card << "\n";
-        std::cout << "  Cardinalidad real: " << real << "\n";
+        if (have_real) {
+            std::cout << "  Cardinalidad real: " << real << "\n";
+        } else {
+            std::cout << "  Cardinalidad real: (omitido)\n";
+        }
         print_join_tree(dp[full_mask].tree.get());
         std::cout << "\n";
 
         component_trees.push_back(clone_tree(dp[full_mask].tree.get()));
         global_cost += dp[full_mask].cost;
         global_est *= (dp[full_mask].est_card > 0.0 ? dp[full_mask].est_card : 0.0);
-        global_real *= real;
+        if (have_real) {
+            global_real *= real;
+        }
     }
 
     std::cout << "================= Resumen global =================\n";
@@ -793,7 +821,11 @@ std::unique_ptr<JoinTreeNode> run_query_plan_compass(
               << global_cost << "\n";
     std::cout << "  Cardinalidad estimada total: "
               << std::fixed << std::setprecision(2) << global_est << "\n";
-    std::cout << "  Cardinalidad real total: " << global_real << "\n";
+    if (run_exact_join) {
+        std::cout << "  Cardinalidad real total: " << global_real << "\n";
+    } else {
+        std::cout << "  Cardinalidad real total: (omitido)\n";
+    }
     std::cout << "==================================================\n\n";
 
     if (component_trees.empty()) return nullptr;

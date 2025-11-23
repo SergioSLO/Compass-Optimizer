@@ -20,13 +20,13 @@ El binario resultante queda en `bin/compass_lite` dentro del host. Cuando se vue
 El programa se ejecuta dentro del contenedor (de esa forma evitamos problemas como el `stub-ld` de NixOS). Los siguientes comandos funcionan igual en bash/zsh y en PowerShell (ambos exponen la ruta actual como `$PWD`):
 
 ```bash
-docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite Data/actor.csv Data/film_actor.csv query/query_1.sql"
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --skip-real Data/actor.csv Data/film_actor.csv query/query_1.sql"
 ```
 
 También puedes indicar un directorio y dejar que el programa cargue automáticamente todos los CSV requeridos por la query (ideal para las consultas más grandes `query_3.sql`, `query_4.sql`):
 
 ```bash
-docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --data-dir Data query/query_2.sql"
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --skip-real --data-dir Data query/query_2.sql"
 ```
 
 > Consejo: usa `--data-dir Data` para queries grandes (`query_3.sql`, `query_4.sql`) y evita listar manualmente cada CSV. El programa cargará `Data/<tabla>.csv` según los nombres usados en el SQL.
@@ -37,11 +37,12 @@ Parámetros adicionales:
 - `--plan-dot=plan.dot` &rarr; exporta el árbol del planner COMPASS a Graphviz.
 - `--plan-png=plan.png` &rarr; genera PNG (requiere haber pasado `--plan-dot`).
 - `--data-dir=Data` &rarr; intenta cargar cada tabla mencionada en el SQL como `<Data>/<tabla>.csv`.
+- `--skip-real` &rarr; omite el cálculo del join exacto (solo muestra el plan y reduce tiempos).
 
 Ejemplo completo con exportación (útil para acompañar la demo que muestra todos los joins de `query_3.sql`):
 
 ```bash
-docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --mode=both --plan-dot=plan.dot --plan-png=plan.png --data-dir Data query/query_3.sql"
+docker run --rm -v "$PWD":/workspace -w /workspace compass-lite-dev bash -lc "./bin/compass_lite --skip-real --mode=both --plan-dot=plan.dot --plan-png=plan.png --data-dir Data query/query_3.sql"
 ```
 
 El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo para mostrar el árbol resultante.
@@ -64,7 +65,7 @@ docker run --rm -d -p 5432:5432 -v "$PWD/../Data:/data" --name pg compass-postgr
 docker run --rm --network=host -e DEBIAN_FRONTEND=noninteractive -v "$PWD":/workspace -w /workspace python:3-slim bash -lc "apt-get update >/dev/null && apt-get install -y -qq postgresql-client graphviz >/dev/null && python scripts/compare_plans.py --data-dir Data --compass-plan-dot=plan.dot --compass-plan-png=plan.png query/query_3.sql"
 ```
 
-El script muestra el costo/cardenalidad estimada de COMPASS-lite y el resultado de `EXPLAIN (ANALYZE, FORMAT JSON)` de PostgreSQL (filas estimadas, filas reales y tiempos). Sirve para comparar los árboles/plans que se presentan en la demo. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
+El script muestra el costo/cardenalidad estimada de COMPASS-lite (solo plan; no ejecuta el join exacto gracias a `--skip-real`) y el resultado de `EXPLAIN (FORMAT JSON)` de PostgreSQL (nodo raíz, filas/costos estimados). También genera automáticamente `plan.dot`/`plan.png` si proporcionas las rutas. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
 
 ## Datos y consultas
 
