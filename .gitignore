@@ -32,6 +32,4 @@
 *.app
 
 # Outputs
-outputs/
-plan.dot
-plan.png
+out/
