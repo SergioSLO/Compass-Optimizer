@@ -58,13 +58,15 @@ docker run --rm -d -p 5432:5432 -v "$(pwd)/../Data:/data" --name pg compass-post
 
 2. Verifica que `psql` pueda conectarse a `postgresql://compass:compass@localhost:5432/compassdb` (y asegúrate de tener Python 3 instalado para correr el script).
 
-3. Usa el script `scripts/compare_plans.py` para ejecutar la misma consulta en COMPASS-lite y en PostgreSQL:
+3. Usa el script `scripts/compare_plans.py` desde un contenedor Python (no necesitas tener Python ni psql instalados en el host):
 
 ```bash
-python3 scripts/compare_plans.py --data-dir Data query/query_3.sql
+docker run --rm --network=host -e DEBIAN_FRONTEND=noninteractive \
+  -v "$PWD":/workspace -w /workspace python:3-slim \
+  bash -lc "apt-get update >/dev/null && apt-get install -y -qq postgresql-client >/dev/null && python scripts/compare_plans.py --data-dir Data query/query_3.sql"
 ```
 
-El script muestra el costo/cardenalidad estimada de COMPASS-lite y el resultado de `EXPLAIN (ANALYZE, FORMAT JSON)` de PostgreSQL (filas estimadas, filas reales y tiempos). Sirve para comparar los árboles/plans que se presentan en la demo.
+El script muestra el costo/cardenalidad estimada de COMPASS-lite y el resultado de `EXPLAIN (ANALYZE, FORMAT JSON)` de PostgreSQL (filas estimadas, filas reales y tiempos). Sirve para comparar los árboles/plans que se presentan en la demo. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
 
 ## Datos y consultas
 
