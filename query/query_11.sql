@@ -45,7 +45,4 @@ JOIN film_category AS fc
 JOIN category AS c
     ON fc.category_id = c.category_id
 JOIN payment AS p
-    ON r.rental_id = p.rental_id
-JOIN payment AS p2
-    ON st.staff_id = p2.staff_id
-
+    ON r.rental_id = p.rental_id;

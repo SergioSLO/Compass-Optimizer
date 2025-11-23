@@ -1,0 +1,13 @@
+digraph plan {
+  rankdir=TB;
+  node [fontname="Arial"];
+  node0 [label="Join(category,film_category,film)\n est=6058\n cost=6498", shape=oval, style=filled, fillcolor=lightyellow];
+  node1 [label="Scan film\n est=1000", shape=box, style=filled, fillcolor=lightblue];
+  node0 -> node1;
+  node2 [label="Join(category,film_category)\n est=1000\n cost=2524", shape=oval, style=filled, fillcolor=lightyellow];
+  node3 [label="Scan film_category\n est=1000", shape=box, style=filled, fillcolor=lightblue];
+  node2 -> node3;
+  node4 [label="Scan category\n est=16", shape=box, style=filled, fillcolor=lightblue];
+  node2 -> node4;
+  node0 -> node2;
+}

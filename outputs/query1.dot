@@ -1,0 +1,9 @@
+digraph plan {
+  rankdir=TB;
+  node [fontname="Arial"];
+  node0 [label="Join(film_actor,actor)\n est=6720.25\n cost=15213.2", shape=oval, style=filled, fillcolor=lightyellow];
+  node1 [label="Scan actor\n est=200", shape=box, style=filled, fillcolor=lightblue];
+  node0 -> node1;
+  node2 [label="Scan film_actor\n est=5462", shape=box, style=filled, fillcolor=lightblue];
+  node0 -> node2;
+}

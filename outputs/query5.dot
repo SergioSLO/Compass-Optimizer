@@ -1,0 +1,29 @@
+digraph plan {
+  rankdir=TB;
+  node [fontname="Arial"];
+  node0 [label="Join(film,inventory,rental,customer,address,city,country)\n est=202114\n cost=361992", shape=oval, style=filled, fillcolor=lightyellow];
+  node1 [label="Join(rental,customer,address,city,country)\n est=57808.8\n cost=116582", shape=oval, style=filled, fillcolor=lightyellow];
+  node2 [label="Join(customer,address,city,country)\n est=939.75\n cost=2896", shape=oval, style=filled, fillcolor=lightyellow];
+  node3 [label="Join(address,city,country)\n est=66\n cost=1038.25", shape=oval, style=filled, fillcolor=lightyellow];
+  node4 [label="Join(city,country)\n est=6.16441\n cost=64.6644", shape=oval, style=filled, fillcolor=lightyellow];
+  node5 [label="Scan country\n est=1", shape=box, style=filled, fillcolor=lightblue];
+  node4 -> node5;
+  node6 [label="Scan city\n est=38", shape=box, style=filled, fillcolor=lightblue];
+  node4 -> node6;
+  node3 -> node4;
+  node7 [label="Scan address\n est=603", shape=box, style=filled, fillcolor=lightblue];
+  node3 -> node7;
+  node2 -> node3;
+  node8 [label="Scan customer\n est=590", shape=box, style=filled, fillcolor=lightblue];
+  node2 -> node8;
+  node1 -> node2;
+  node9 [label="Scan rental\n est=36938", shape=box, style=filled, fillcolor=lightblue];
+  node1 -> node9;
+  node0 -> node1;
+  node10 [label="Join(film,inventory)\n est=4514.5\n cost=12134.5", shape=oval, style=filled, fillcolor=lightyellow];
+  node11 [label="Scan inventory\n est=4581", shape=box, style=filled, fillcolor=lightblue];
+  node10 -> node11;
+  node12 [label="Scan film\n est=499", shape=box, style=filled, fillcolor=lightblue];
+  node10 -> node12;
+  node0 -> node10;
+}
