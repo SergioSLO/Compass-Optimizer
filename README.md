@@ -56,7 +56,7 @@ docker build -t compass-postgres .
 docker run --rm -d -p 5432:5432 -v "$PWD/../Data:/data" --name pg compass-postgres
 ```
 
-2. Verifica que `psql` pueda conectarse a `postgresql://compass:compass@localhost:5432/compassdb` (y asegúrate de tener Python 3 instalado para correr el script).
+2. Vuelve a la raíz del repositorio (`cd ..`) para ejecutar los siguientes pasos. Verifica que `psql` pueda conectarse a `postgresql://compass:compass@localhost:5432/compassdb` (y asegúrate de tener Python 3 instalado para correr el script).
 
 3. Usa el script `scripts/compare_plans.py` desde un contenedor Python (no necesitas tener Python ni psql instalados en el host):
 
