@@ -53,7 +53,7 @@ El archivo DOT/PNG puede usarse en las diapositivas o en el video de la demo par
 ```bash
 cd postgres
 docker build -t compass-postgres .
-docker run --rm -d -p 5432:5432 -v "$(pwd)/../Data:/data" --name pg compass-postgres
+docker run --rm -d -p 5432:5432 -v "$PWD/../Data:/data" --name pg compass-postgres
 ```
 
 2. Verifica que `psql` pueda conectarse a `postgresql://compass:compass@localhost:5432/compassdb` (y asegúrate de tener Python 3 instalado para correr el script).
