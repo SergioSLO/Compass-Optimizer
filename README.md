@@ -66,7 +66,7 @@ docker run --rm --network=host -e DEBIAN_FRONTEND=noninteractive -v "$PWD":/work
 
 > Nota: crea la carpeta `outputs/` antes de invocar estos comandos si deseas conservar los planes.
 
-El script muestra el costo/cardenalidad estimada y el tiempo de planificación de COMPASS-lite (solo plan) y el resultado de `EXPLAIN (ANALYZE, FORMAT JSON)` de PostgreSQL (nodo raíz, filas/costos estimados, tiempos de planificación/ejecución). También genera automáticamente `outputs/*.dot`/`outputs/*.png` si proporcionas las rutas. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
+El script muestra el costo/cardenalidad estimada y el tiempo de planificación de COMPASS-lite (solo plan) y el resultado de `EXPLAIN (FORMAT JSON)` de PostgreSQL (nodo raíz, filas/costos estimados). También genera automáticamente `outputs/*.dot`/`outputs/*.png` si proporcionas las rutas. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
 
 ## Datos y consultas
 

@@ -86,7 +86,7 @@ def run_compass(args):
 
 def run_postgres(args):
     sql = load_query(args.query)
-    explain_sql = f"EXPLAIN (ANALYZE, FORMAT JSON) {sql};"
+    explain_sql = f"EXPLAIN (FORMAT JSON) {sql};"
     cmd = [
         "psql",
         args.pg_url,
@@ -117,7 +117,6 @@ def run_postgres(args):
         "total_cost": plan_root.get("Total Cost"),
         "actual_rows": plan_root.get("Actual Rows"),
         "planning_time": data[0].get("Planning Time"),
-        "execution_time": data[0].get("Execution Time"),
         "node_type": plan_root.get("Node Type"),
         "raw": stdout,
         "elapsed_ms": elapsed_ms,
@@ -173,14 +172,13 @@ def main():
     if plan_time is not None:
         print(f"  Tiempo de planificación   : {plan_time:.2f} ms")
 
-    print("\n== PostgreSQL (EXPLAIN ANALYZE) ==")
+    print("\n== PostgreSQL (EXPLAIN) ==")
     pg_stats = run_postgres(args)
     print("--- Resumen ---")
     print(f"  Nodo raíz             : {pg_stats.get('node_type')}")
     print(f"  Filas (est/reales)    : {pg_stats.get('plan_rows')} / {pg_stats.get('actual_rows')}")
     print(f"  Costos (inicio/total) : {pg_stats.get('startup_cost')} / {pg_stats.get('total_cost')}")
     print(f"  Tiempo planificación  : {pg_stats.get('planning_time')} ms")
-    print(f"  Tiempo ejecución      : {pg_stats.get('execution_time')} ms")
     elapsed = pg_stats.get("elapsed_ms")
     if elapsed is not None:
         print(f"  Tiempo total comando  : {elapsed:.2f} ms")
