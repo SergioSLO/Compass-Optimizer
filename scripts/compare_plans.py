@@ -110,6 +110,7 @@ def run_postgres(args):
         "planning_time": data[0].get("Planning Time"),
         "execution_time": data[0].get("Execution Time"),
         "node_type": plan_root.get("Node Type"),
+        "raw": stdout,
     }
     return stats
 
@@ -156,6 +157,9 @@ def main():
 
     print("\n== PostgreSQL (EXPLAIN ANALYZE) ==")
     pg_stats = run_postgres(args)
+    print("--- Salida completa ---")
+    print(pg_stats.get("raw", ""))
+    print("\n--- Resumen ---")
     print(f"  Nodo raíz        : {pg_stats.get('node_type')}")
     print(f"  Filas estimadas  : {pg_stats.get('plan_rows')}")
     print(f"  Filas reales     : {pg_stats.get('actual_rows')}")
