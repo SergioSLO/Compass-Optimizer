@@ -64,7 +64,6 @@ def build_compass_command(args):
         "--data-dir",
         args.data_dir,
     ]
-    cmd.append("--skip-real")
     if args.compass_plan_dot:
         cmd.append(f"--plan-dot={args.compass_plan_dot}")
     if args.compass_plan_png:

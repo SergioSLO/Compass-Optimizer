@@ -19,10 +19,8 @@ struct JoinTreeNode {
 };
 
 void run_query_plan(const std::unordered_map<std::string, Table> &tables,
-                    const JoinQuery &q,
-                    bool run_exact_join = true);
+                    const JoinQuery &q);
 
 std::unique_ptr<JoinTreeNode> run_query_plan_compass(
     const std::unordered_map<std::string, Table> &tables,
-    const JoinQuery &q,
-    bool run_exact_join = true);
+    const JoinQuery &q);

@@ -35,7 +35,6 @@ int main(int argc, char **argv) {
         std::string png_path;
         std::vector<std::string> inputs;
         std::string data_dir;
-        bool skip_real = false;
 
         for (int i = 1; i < argc; ++i) {
             std::string arg = argv[i];
@@ -52,8 +51,6 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("--data-dir requiere una ruta");
                 }
                 data_dir = argv[++i];
-            } else if (arg == "--skip-real") {
-                skip_real = true;
             } else {
                 inputs.push_back(arg);
             }
@@ -114,12 +111,12 @@ int main(int argc, char **argv) {
         }
 
         if (mode == PlannerMode::Greedy || mode == PlannerMode::Both) {
-            run_query_plan(tables, q, !skip_real);
+            run_query_plan(tables, q);
         }
 
         std::unique_ptr<JoinTreeNode> compass_tree;
         if (mode == PlannerMode::Compass || mode == PlannerMode::Both) {
-            compass_tree = run_query_plan_compass(tables, q, !skip_real);
+            compass_tree = run_query_plan_compass(tables, q);
         }
 
         if (!dot_path.empty() && compass_tree) {

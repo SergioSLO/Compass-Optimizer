@@ -246,108 +246,6 @@ double estimate_component_with_sketches(
     return est;
 }
 
-std::uint64_t execute_exact_component_join(
-    const std::vector<std::string> &component_tables,
-    const std::vector<JoinCondition> &component_joins,
-    const std::unordered_map<std::string, const Table*> &table_ptrs,
-    const std::unordered_map<std::string, std::vector<int>> &rows_per_table) {
-    if (component_joins.empty()) {
-        std::uint64_t prod = 1;
-        for (const auto &tbl : component_tables) {
-            prod *= static_cast<std::uint64_t>(rows_per_table.at(tbl).size());
-        }
-        return prod;
-    }
-
-    JoinCondition seed = component_joins.front();
-    std::vector<std::pair<std::unordered_map<std::string, std::string>, std::uint64_t>> tuples;
-
-    const Table *L = table_ptrs.at(seed.leftTable);
-    const Table *R = table_ptrs.at(seed.rightTable);
-    const auto &Lrows = rows_per_table.at(seed.leftTable);
-    const auto &Rrows = rows_per_table.at(seed.rightTable);
-    int Li = L->getColumnIndex(seed.leftKey);
-    int Ri = R->getColumnIndex(seed.rightKey);
-    if (Li < 0 || Ri < 0) return 0;
-
-    std::unordered_map<std::string, std::vector<int>> right_map;
-    for (int r : Rrows) {
-        right_map[R->data[r][Ri]].push_back(r);
-    }
-    for (int l : Lrows) {
-        const std::string &lv = L->data[l][Li];
-        auto it = right_map.find(lv);
-        if (it == right_map.end()) continue;
-        for (int rr : it->second) {
-            (void)rr;
-            std::unordered_map<std::string, std::string> tup;
-            tup[seed.leftTable + "." + seed.leftKey] = lv;
-            tup[seed.rightTable + "." + seed.rightKey] = lv;
-            tuples.emplace_back(std::move(tup), 1);
-        }
-    }
-
-    if (tuples.empty()) return 0;
-
-    std::unordered_set<size_t> used;
-    used.insert(0);
-    bool progress = true;
-    while (progress) {
-        progress = false;
-        for (size_t i = 0; i < component_joins.size(); ++i) {
-            if (used.count(i)) continue;
-            const auto &jc = component_joins[i];
-            std::string left_key = jc.leftTable + "." + jc.leftKey;
-            std::string right_key = jc.rightTable + "." + jc.rightKey;
-
-            bool left_present = tuples.front().first.count(left_key);
-            bool right_present = tuples.front().first.count(right_key);
-            if (!left_present && !right_present) continue;
-
-            const std::string present_table = left_present ? jc.leftTable : jc.rightTable;
-            const std::string present_col = left_present ? jc.leftKey : jc.rightKey;
-            const std::string missing_table = left_present ? jc.rightTable : jc.leftTable;
-            const std::string missing_col = left_present ? jc.rightKey : jc.leftKey;
-
-            const Table *missing = table_ptrs.at(missing_table);
-            const auto &missing_rows = rows_per_table.at(missing_table);
-            int miss_idx = missing->getColumnIndex(missing_col);
-            if (miss_idx < 0) {
-                used.insert(i);
-                continue;
-            }
-            std::unordered_map<std::string, std::vector<int>> miss_map;
-            for (int r : missing_rows) {
-                miss_map[missing->data[r][miss_idx]].push_back(r);
-            }
-
-            std::vector<std::pair<std::unordered_map<std::string, std::string>, std::uint64_t>> next;
-            for (auto &entry : tuples) {
-                auto tuple_vals = entry.first;
-                std::uint64_t mult = entry.second;
-                auto itv = tuple_vals.find(present_table + "." + present_col);
-                if (itv == tuple_vals.end()) continue;
-                auto itlist = miss_map.find(itv->second);
-                if (itlist == miss_map.end()) continue;
-                for (int row : itlist->second) {
-                    (void)row;
-                    auto new_tuple = tuple_vals;
-                    new_tuple[missing_table + "." + missing_col] = itv->second;
-                    next.emplace_back(std::move(new_tuple), mult);
-                }
-            }
-            tuples.swap(next);
-            used.insert(i);
-            progress = true;
-            if (tuples.empty()) return 0;
-        }
-    }
-
-    std::uint64_t total = 0;
-    for (auto &entry : tuples) total += entry.second;
-    return total;
-}
-
 void print_sequential_plan(const std::vector<std::string> &order,
                            const std::vector<double> &step_cards,
                            const std::string &label) {
@@ -620,8 +518,7 @@ QueryContext prepare_context(const std::unordered_map<std::string, Table> &table
 }  // namespace
 
 void run_query_plan(const std::unordered_map<std::string, Table> &tables,
-                    const JoinQuery &q,
-                    bool run_exact_join) {
+                    const JoinQuery &q) {
     QueryContext ctx = prepare_context(tables, q);
 
     std::cout << "================= COMPASS-lite (Left-deep) =================\n";
@@ -633,7 +530,6 @@ void run_query_plan(const std::unordered_map<std::string, Table> &tables,
     std::cout << "\n";
 
     double total_estimate = 1.0;
-    std::uint64_t total_real = 1;
 
     for (const auto &component : ctx.components) {
         if (component.size() == 1) {
@@ -641,7 +537,6 @@ void run_query_plan(const std::unordered_map<std::string, Table> &tables,
             std::uint64_t rows = ctx.rows_per_table[name].size();
             std::cout << "Componente aislado: " << name << " (" << rows << " filas)\n\n";
             total_estimate *= rows;
-            total_real *= rows;
             continue;
         }
 
@@ -661,51 +556,29 @@ void run_query_plan(const std::unordered_map<std::string, Table> &tables,
         if (est_component == 0.0 && !step_cards.empty()) {
             est_component = step_cards.back();
         }
-        std::uint64_t real = 0;
-        bool have_real = false;
-        if (run_exact_join) {
-            real = execute_exact_component_join(component, comp_joins,
-                                                ctx.table_ptrs, ctx.rows_per_table);
-            have_real = true;
-        }
 
         print_sequential_plan(order, step_cards, "Orden elegido:");
         std::cout << "  Costo acumulado estimado: " << std::fixed << std::setprecision(2)
                   << cost << "\n";
         std::cout << "  Cardinalidad estimada componente: "
-                  << std::fixed << std::setprecision(2) << est_component << "\n";
-        if (have_real) {
-            std::cout << "  Cardinalidad real componente: " << real << "\n\n";
-        } else {
-            std::cout << "  Cardinalidad real componente: (omitido)\n\n";
-        }
+                  << std::fixed << std::setprecision(2) << est_component << "\n\n";
 
         total_estimate *= (est_component > 0.0 ? est_component : 0.0);
-        if (have_real) {
-            total_real *= real;
-        }
     }
 
     std::cout << "================= Totales (producto componentes) ================\n";
     std::cout << "  Cardinalidad estimada total : "
               << std::fixed << std::setprecision(2) << total_estimate << "\n";
-    if (run_exact_join) {
-        std::cout << "  Cardinalidad real total     : " << total_real << "\n";
-    } else {
-        std::cout << "  Cardinalidad real total     : (omitido)\n";
-    }
     std::cout << "=================================================================\n\n";
 }
 
 std::unique_ptr<JoinTreeNode> run_query_plan_compass(
     const std::unordered_map<std::string, Table> &tables,
-    const JoinQuery &q,
-    bool run_exact_join) {
+    const JoinQuery &q) {
     QueryContext ctx = prepare_context(tables, q);
 
     std::cout << "================= Planner estilo COMPASS =================\n";
     double global_est = 1.0;
-    std::uint64_t global_real = 1;
     double global_cost = 0.0;
     std::vector<std::unique_ptr<JoinTreeNode>> component_trees;
 
@@ -789,31 +662,16 @@ std::unique_ptr<JoinTreeNode> run_query_plan_compass(
             continue;
         }
 
-        std::uint64_t real = 0;
-        bool have_real = false;
-        if (run_exact_join) {
-            real = execute_exact_component_join(component, comp_joins,
-                                                 ctx.table_ptrs, ctx.rows_per_table);
-            have_real = true;
-        }
         std::cout << "  Mejor costo estimado: " << std::fixed << std::setprecision(2)
                   << dp[full_mask].cost << "\n";
         std::cout << "  Cardinalidad estimada: "
                   << std::fixed << std::setprecision(2) << dp[full_mask].est_card << "\n";
-        if (have_real) {
-            std::cout << "  Cardinalidad real: " << real << "\n";
-        } else {
-            std::cout << "  Cardinalidad real: (omitido)\n";
-        }
         print_join_tree(dp[full_mask].tree.get());
         std::cout << "\n";
 
         component_trees.push_back(clone_tree(dp[full_mask].tree.get()));
         global_cost += dp[full_mask].cost;
         global_est *= (dp[full_mask].est_card > 0.0 ? dp[full_mask].est_card : 0.0);
-        if (have_real) {
-            global_real *= real;
-        }
     }
 
     std::cout << "================= Resumen global =================\n";
@@ -821,11 +679,6 @@ std::unique_ptr<JoinTreeNode> run_query_plan_compass(
               << global_cost << "\n";
     std::cout << "  Cardinalidad estimada total: "
               << std::fixed << std::setprecision(2) << global_est << "\n";
-    if (run_exact_join) {
-        std::cout << "  Cardinalidad real total: " << global_real << "\n";
-    } else {
-        std::cout << "  Cardinalidad real total: (omitido)\n";
-    }
     std::cout << "==================================================\n\n";
 
     if (component_trees.empty()) return nullptr;

@@ -37,7 +37,6 @@ Parámetros adicionales:
 - `--plan-dot=plan.dot` &rarr; exporta el árbol del planner COMPASS a Graphviz.
 - `--plan-png=plan.png` &rarr; genera PNG (requiere haber pasado `--plan-dot`).
 - `--data-dir=Data` &rarr; intenta cargar cada tabla mencionada en el SQL como `<Data>/<tabla>.csv`.
-- `--skip-real` &rarr; omite el cálculo del join exacto (solo muestra el plan y reduce tiempos).
 
 Ejemplo completo con exportación (útil para acompañar la demo que muestra todos los joins de `query_3.sql`):
 
@@ -65,7 +64,7 @@ docker run --rm -d -p 5432:5432 -v "$PWD/../Data:/data" --name pg compass-postgr
 docker run --rm --network=host -e DEBIAN_FRONTEND=noninteractive -v "$PWD":/workspace -w /workspace python:3-slim bash -lc "apt-get update >/dev/null && apt-get install -y -qq postgresql-client graphviz >/dev/null && python scripts/compare_plans.py --data-dir Data --compass-plan-dot=outputs/query3.dot --compass-plan-png=outputs/query3.png query/query_3.sql"
 ```
 
-El script muestra el costo/cardenalidad estimada de COMPASS-lite (invoca internamente `--skip-real` para evitar el join exacto y quedarse solo con el plan) y el resultado de `EXPLAIN (FORMAT JSON)` de PostgreSQL (nodo raíz, filas/costos estimados). También genera automáticamente `plan.dot`/`plan.png` si proporcionas las rutas. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
+El script muestra el costo/cardenalidad estimada de COMPASS-lite (solo plan) y el resultado de `EXPLAIN (FORMAT JSON)` de PostgreSQL (nodo raíz, filas/costos estimados). También genera automáticamente `plan.dot`/`plan.png` si proporcionas las rutas. (En Windows PowerShell usa comillas dobles en lugar de simples para la ruta).
 
 ## Datos y consultas
 
