@@ -55,16 +55,27 @@ def load_query(path):
     return sql
 
 
-def run_compass(args):
+def build_compass_command(args):
     cmd = [
         args.compass_bin,
         "--mode=both",
         "--data-dir",
         args.data_dir,
-        args.query,
     ]
+    if args.compass_plan_dot:
+        cmd.append(f"--plan-dot={args.compass_plan_dot}")
+    if args.compass_plan_png:
+        cmd.append(f"--plan-png={args.compass_plan_png}")
+    cmd.append(args.query)
+    return cmd
+
+
+def run_compass(args):
+    cmd = build_compass_command(args)
     output = run_command(cmd)
-    return parse_compass_stats(output)
+    stats = parse_compass_stats(output)
+    stats["full_output"] = output
+    return stats
 
 
 def run_postgres(args):
@@ -119,6 +130,16 @@ def main():
         help="Ruta al ejecutable de COMPASS-lite.",
     )
     parser.add_argument(
+        "--compass-plan-dot",
+        default="",
+        help="Ruta para exportar el plan en formato DOT (opcional).",
+    )
+    parser.add_argument(
+        "--compass-plan-png",
+        default="",
+        help="Ruta para exportar el plan en PNG (opcional).",
+    )
+    parser.add_argument(
         "--pg-url",
         default="postgresql://compass:compass@localhost:5432/compassdb",
         help="Cadena de conexión a PostgreSQL para psql.",
@@ -127,9 +148,11 @@ def main():
 
     print("== COMPASS-lite ==")
     compass_stats = run_compass(args)
+    print("--- Salida completa ---")
+    print(compass_stats.get("full_output", ""))
+    print("\n--- Resumen ---")
     print(f"  Costo acumulado estimado : {compass_stats.get('cost')}")
     print(f"  Cardinalidad estimada     : {compass_stats.get('est_total')}")
-    print(f"  Cardinalidad real (hash)  : {compass_stats.get('real_total')}")
 
     print("\n== PostgreSQL (EXPLAIN ANALYZE) ==")
     pg_stats = run_postgres(args)
