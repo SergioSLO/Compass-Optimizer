@@ -50,21 +50,13 @@ docker build -t compass-postgres .
 
 ## 4. Ejecutar contenedor PostgreSQL
 
-Para Linux/macOS:
+Para cualquier plataforma:
 
+```bash
 docker run --rm -d -p 5432:5432 -v "$(pwd)/../Data:/data" --name pg compass-postgres
+```
 
-Para Windows PowerShell:
-
-docker run --rm -d `
-    -p 5432:5432 `
-    -v "${PWD}\..\Data:/data" `
-    --name pg `
-    compass-postgres
-
-Para Windows CMD:
-
-docker run --rm -d -p 5432:5432 -v "%cd%\..\Data:/data" --name pg compass-postgres
+> Windows PowerShell: usa comillas dobles `"` (tal como arriba). Windows CMD no soporta `$(pwd)`, se recomienda PowerShell.
 
 El contenedor:
 - Crea automáticamente la BD y tablas (via create_tables.sql)
