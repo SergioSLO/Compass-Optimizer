@@ -111,6 +111,7 @@ std::vector<int> filter_rows(const Table &t, const std::vector<Predicate> &preds
     return rows;
 }
 
+//IMPORTANT
 FGMSketch build_sketch_for_table(const Table &t,
                                 const std::vector<int> &rows,
                                 const std::string &joinCol) {
@@ -141,6 +142,7 @@ void build_sketch_cache(const std::unordered_map<std::string, Table> &tables,
     }
 }
 
+//IMPORTANT BFS ORDER
 std::vector<std::vector<std::string>> compute_join_components(const JoinQuery &q) {
     std::unordered_map<std::string, std::vector<std::string>> adj;
     for (const auto &tbl : q.tables) adj[tbl];  // asegurar nodo
@@ -387,6 +389,7 @@ std::vector<std::string> greedy_left_deep_order(
     return order;
 }
 
+//?
 std::vector<std::string> best_left_deep_order(
     const std::vector<std::string> &tables,
     const std::vector<JoinCondition> &joins,
@@ -394,7 +397,7 @@ std::vector<std::string> best_left_deep_order(
     const std::unordered_map<std::string, FGMSketch> &cache,
     std::vector<double> &step_cards,
     double &best_cost) {
-    if (tables.size() <= 7) {
+    if (tables.size() <= 7) { // WHY
         std::vector<std::string> perm = tables;
         std::sort(perm.begin(), perm.end());
         std::vector<std::string> best = perm;
