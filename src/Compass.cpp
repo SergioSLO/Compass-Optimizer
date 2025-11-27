@@ -23,6 +23,7 @@ void FGMSketch::add(const std::string &key, std::uint64_t c) {
     }
 }
 
+/*
 std::uint64_t FGMSketch::estimate_point(const std::string &key) const {
     std::hash<std::string> H;
     std::uint64_t est = std::numeric_limits<std::uint64_t>::max();
@@ -33,6 +34,7 @@ std::uint64_t FGMSketch::estimate_point(const std::string &key) const {
     }
     return est;
 }
+*/
 
 double estimate_join_cardinality(const FGMSketch &A, const FGMSketch &B) {
     if (A.depth != B.depth || A.width != B.width) {

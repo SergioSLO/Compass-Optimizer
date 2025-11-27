@@ -11,7 +11,7 @@ struct FGMSketch {
 
     FGMSketch(int d = 4, int w = 1021);
     void add(const std::string &key, std::uint64_t c = 1);
-    std::uint64_t estimate_point(const std::string &key) const;
+    //std::uint64_t estimate_point(const std::string &key) const;
 };
 
 // Estima |A ⋈ B| usando join de sketches bucket-wise
