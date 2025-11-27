@@ -5,7 +5,7 @@
 #include <limits>
 #include <stdexcept>
 
-CMSketch::CMSketch(int d, int w) : depth(d), width(w) {
+FGMSketch::FGMSketch(int d, int w) : depth(d), width(w) {
     salts.resize(depth);
     counts.assign(depth, std::vector<std::uint64_t>(width, 0));
     std::mt19937_64 rng(123456789);
@@ -14,7 +14,7 @@ CMSketch::CMSketch(int d, int w) : depth(d), width(w) {
     }
 }
 
-void CMSketch::add(const std::string &key, std::uint64_t c) {
+void FGMSketch::add(const std::string &key, std::uint64_t c) {
     std::hash<std::string> H;
     for (int i = 0; i < depth; ++i) {
         std::uint64_t h = H(key) ^ salts[i];
@@ -23,7 +23,7 @@ void CMSketch::add(const std::string &key, std::uint64_t c) {
     }
 }
 
-std::uint64_t CMSketch::estimate_point(const std::string &key) const {
+std::uint64_t FGMSketch::estimate_point(const std::string &key) const {
     std::hash<std::string> H;
     std::uint64_t est = std::numeric_limits<std::uint64_t>::max();
     for (int i = 0; i < depth; ++i) {
@@ -34,7 +34,7 @@ std::uint64_t CMSketch::estimate_point(const std::string &key) const {
     return est;
 }
 
-double estimate_join_cardinality(const CMSketch &A, const CMSketch &B) {
+double estimate_join_cardinality(const FGMSketch &A, const FGMSketch &B) {
     if (A.depth != B.depth || A.width != B.width) {
         throw std::runtime_error("Sketches con dimensiones distintas");
     }
@@ -54,7 +54,7 @@ double estimate_join_cardinality(const CMSketch &A, const CMSketch &B) {
     return total / static_cast<double>(d);
 }
 
-double estimate_join_cardinality_multi(const std::vector<CMSketch> &sketches) {
+double estimate_join_cardinality_multi(const std::vector<FGMSketch> &sketches) {
     if (sketches.empty()) return 0.0;
     int d = sketches.front().depth;
     int w = sketches.front().width;

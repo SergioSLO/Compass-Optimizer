@@ -22,7 +22,7 @@ struct QueryContext {
     std::vector<std::string> table_order;
     std::unordered_map<std::string, const Table*> table_ptrs;
     std::unordered_map<std::string, std::vector<int>> rows_per_table;
-    std::unordered_map<std::string, CMSketch> sketchCache;
+    std::unordered_map<std::string, FGMSketch> sketchCache;
     std::vector<std::vector<std::string>> components;
 };
 
@@ -111,14 +111,14 @@ std::vector<int> filter_rows(const Table &t, const std::vector<Predicate> &preds
     return rows;
 }
 
-CMSketch build_sketch_for_table(const Table &t,
+FGMSketch build_sketch_for_table(const Table &t,
                                 const std::vector<int> &rows,
                                 const std::string &joinCol) {
     int col_idx = t.getColumnIndex(joinCol);
     if (col_idx < 0) {
         throw std::runtime_error("Columna " + joinCol + " no existe en tabla " + t.name);
     }
-    CMSketch sk(4, 1021);
+    FGMSketch sk(4, 1021);
     for (int r : rows) {
         sk.add(t.data[r][col_idx], 1);
     }
@@ -128,7 +128,7 @@ CMSketch build_sketch_for_table(const Table &t,
 void build_sketch_cache(const std::unordered_map<std::string, Table> &tables,
                         const std::unordered_map<std::string, std::vector<int>> &rows_per_table,
                         const JoinQuery &q,
-                        std::unordered_map<std::string, CMSketch> &cache) {
+                        std::unordered_map<std::string, FGMSketch> &cache) {
     for (const auto &jc : q.joins) {
         auto add = [&](const std::string &tbl, const std::string &col) {
             std::string key = sk_key(tbl, col);
@@ -205,12 +205,12 @@ double compute_join_cost(double left_rows, double right_rows, double join_rows) 
 double estimate_component_with_sketches(
     const std::vector<std::string> &component_tables,
     const std::vector<JoinCondition> &component_joins,
-    const std::unordered_map<std::string, CMSketch> &cache) {
+    const std::unordered_map<std::string, FGMSketch> &cache) {
     if (component_joins.empty()) return 0.0;
 
     std::unordered_set<std::string> used_tables;
     std::unordered_set<std::string> used_keys;
-    std::vector<CMSketch> sketches;
+    std::vector<FGMSketch> sketches;
 
     for (const auto &jc : component_joins) {
         std::string kl = sk_key(jc.leftTable, jc.leftKey);
@@ -266,7 +266,7 @@ void print_sequential_plan(const std::vector<std::string> &order,
 bool find_join_estimate(const std::string &newTable,
                         const std::unordered_set<std::string> &prefix,
                         const std::vector<JoinCondition> &joins,
-                        const std::unordered_map<std::string, CMSketch> &cache,
+                        const std::unordered_map<std::string, FGMSketch> &cache,
                         double &estimate) {
     double best = std::numeric_limits<double>::infinity();
     bool found = false;
@@ -303,7 +303,7 @@ bool find_join_estimate(const std::string &newTable,
 double evaluate_left_deep_order(
     const std::vector<std::string> &order,
     const std::vector<JoinCondition> &joins,
-    const std::unordered_map<std::string, CMSketch> &cache,
+    const std::unordered_map<std::string, FGMSketch> &cache,
     const std::unordered_map<std::string, std::vector<int>> &rows_per_table,
     std::vector<double> &step_cards) {
     if (order.empty()) return 0.0;
@@ -331,7 +331,7 @@ std::vector<std::string> greedy_left_deep_order(
     const std::vector<std::string> &tables,
     const std::vector<JoinCondition> &joins,
     const std::unordered_map<std::string, std::vector<int>> &rows_per_table,
-    const std::unordered_map<std::string, CMSketch> &cache,
+    const std::unordered_map<std::string, FGMSketch> &cache,
     std::vector<double> &step_cards,
     double &total_cost) {
     std::vector<std::string> remaining = tables;
@@ -391,7 +391,7 @@ std::vector<std::string> best_left_deep_order(
     const std::vector<std::string> &tables,
     const std::vector<JoinCondition> &joins,
     const std::unordered_map<std::string, std::vector<int>> &rows_per_table,
-    const std::unordered_map<std::string, CMSketch> &cache,
+    const std::unordered_map<std::string, FGMSketch> &cache,
     std::vector<double> &step_cards,
     double &best_cost) {
     if (tables.size() <= 7) {
@@ -445,7 +445,7 @@ bool estimate_join_between_masks(
     int rightMask,
     const std::unordered_map<std::string, int> &index_map,
     const std::vector<JoinCondition> &joins,
-    const std::unordered_map<std::string, CMSketch> &cache,
+    const std::unordered_map<std::string, FGMSketch> &cache,
     double &estimate) {
     for (const auto &jc : joins) {
         int li = index_map.at(jc.leftTable);

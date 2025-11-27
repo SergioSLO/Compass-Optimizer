@@ -3,19 +3,19 @@
 #include <string>
 #include <cstdint>
 
-struct CMSketch {
+struct FGMSketch {
     int depth;
     int width;
     std::vector<std::uint64_t> salts;
     std::vector<std::vector<std::uint64_t>> counts;
 
-    CMSketch(int d = 4, int w = 1021);
+    FGMSketch(int d = 4, int w = 1021);
     void add(const std::string &key, std::uint64_t c = 1);
     std::uint64_t estimate_point(const std::string &key) const;
 };
 
 // Estima |A ⋈ B| usando join de sketches bucket-wise
-double estimate_join_cardinality(const CMSketch &A, const CMSketch &B);
+double estimate_join_cardinality(const FGMSketch &A, const FGMSketch &B);
 
 // Estimación multi-way combinando todos los sketches
-double estimate_join_cardinality_multi(const std::vector<CMSketch> &sketches);
+double estimate_join_cardinality_multi(const std::vector<FGMSketch> &sketches);
